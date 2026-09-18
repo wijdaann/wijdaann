@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Wijdaan Noor | Portfolio</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Inter, sans-serif;
+  background: #0b1017;
+  color: #f8fafc;
+  line-height: 1.7;
+  background-image: radial-gradient(circle at 85% 10%, #21463d, transparent 32%);
+}
+
+.wrap {
+  width: 90%;
+  max-width: 1100px;
+  margin: auto;
+}
+
+nav {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 5;
+  background: #0b1017dd;
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid #ffffff1a;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+}
+
+.logo {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.logo span,
+h2 span,
+h1 span {
+  color: #34d399;
+}
+
+nav ul {
+  display: flex;
+  gap: 22px;
+  list-style: none;
+}
+
+a {
+  color: #b5c1cd;
+  text-decoration: none;
+}
+
+a:hover {
+  color: white;
+}
+
+.hero {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 55px;
+  align-items: center;
+  padding-top: 90px;
+}
+
+.tag {
+  color: #f59e0b;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: clamp(3rem, 7vw, 6rem);
+  line-height: 1.05;
+  letter-spacing: -4px;
+  margin: 18px 0;
+}
+
+h1 span {
+  font-family: "Playfair Display";
+  font-style: italic;
+}
+
+.muted {
+  color: #a9b7c5;
+}
+
+.buttons {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+
+.btn {
+  padding: 12px 21px;
+  border-radius: 100px;
+  border: 1px solid #ffffff1c;
+  font-weight: 700;
+}
+
+.primary {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #111;
+}
+
+.card {
+  padding: 30px;
+  border: 1px solid #ffffff18;
+  border-radius: 26px;
+  background: #ffffff08;
+  transition: 0.35s;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  border-color: #34d39999;
+}
+
+.profile {
+  animation: float 6s ease-in-out infinite;
+  text-align: center;
+}
+
+.avatar {
+  width: 175px;
+  height: 175px;
+  margin: 0 auto 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 3.6rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #f59e0b, #34d399);
+  color: #101010;
+}
+
+section {
+  padding: 105px 0;
+}
+
+h2 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  margin-bottom: 35px;
+  letter-spacing: -2px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.about {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.info {
+  margin-bottom: 14px;
+  padding: 16px;
+  border: 1px solid #ffffff18;
+  border-radius: 15px;
+  background: #ffffff05;
+}
+
+.info b {
+  display: block;
+  color: #34d399;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.skill {
+  padding: 11px 17px;
+  border-radius: 100px;
+  border: 1px solid #34d39955;
+  color: #bbf7d0;
+  background: #34d3990d;
+}
+
+.contact {
+  text-align: center;
+  padding: 50px;
+}
+
+.contact p {
+  max-width: 600px;
+  margin: 0 auto 25px;
+}
+
+footer {
+  text-align: center;
+  padding: 28px;
+  border-top: 1px solid #ffffff18;
+  color: #a9b7c5;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: 0.8s;
+}
+
+.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@media (max-width: 800px) {
+  .hero,
+  .about {
+    grid-template-columns: 1fr;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  nav ul {
+    gap: 10px;
+  }
+
+  nav a {
+    font-size: 0.75rem;
+  }
+
+  h1 {
+    letter-spacing: -2px;
+  }
+
+  .contact {
+    padding: 30px 15px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <div class="wrap nav">
+    <div class="logo">Wijdaan<span>.</span></div>
+
+    <ul>
+      <li><a href="#about">About</a></li>
+      <li><a href="#journey">Journey</a></li>
+      <li><a href="#skills">Skills</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="wrap hero">
+
+  <div class="reveal">
+    <div class="tag">Welcome to my portfolio</div>
+
+    <h1>
+      Learning today,<br>
+      creating <span>tomorrow.</span>
+    </h1>
+
+    <p class="muted">
+      My name is Wijdaan Noor. I am a student at Dong-A University
+      studying Integrated Business Management. I believe in continuous
+      learning, personal growth, and building a successful future.
+    </p>
+
+    <div class="buttons">
+      <a class="btn primary" href="#about">Explore My Story ↗</a>
+      <a class="btn" href="#contact">Connect With Me</a>
+    </div>
+  </div>
+
+  <div class="card profile reveal">
+    <div class="avatar">WN</div>
+    <h3>Wijdaan Noor</h3>
+    <p class="muted">IBM Student | Dong-A University</p>
+  </div>
+
+</header>
+
+<section id="about">
+  <div class="wrap reveal">
+
+    <h2>A little <span>about me.</span></h2>
+
+    <div class="about">
+
+      <div>
+        <p class="muted">
+          I am currently studying Integrated Business Management at
+          Dong-A University. My academic journey is helping me improve
+          my knowledge, confidence, and understanding of business.
+        </p>
+
+        <br>
+
+        <p class="muted">
+          I enjoy learning new things, working with others, adapting
+          to challenges, and developing skills for my future career.
+        </p>
+      </div>
+
+      <div>
+        <div class="info">
+          <b>Name</b>
+          Wijdaan Noor
+        </div>
+
+        <div class="info">
+          <b>University</b>
+          Dong-A University
+        </div>
+
+        <div class="info">
+          <b>Course</b>
+          Integrated Business Management (IBM)
+        </div>
+
+        <div class="info">
+          <b>Mindset</b>
+          Curious, responsible, and adaptable
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="journey">
+  <div class="wrap reveal">
+
+    <h2>My <span>journey.</span></h2>
+
+    <div class="grid">
+
+      <div class="card">
+        <h3>🎓 Education</h3>
+        <p class="muted">
+          Studying Integrated Business Management at Dong-A University
+          and developing knowledge in different areas of business.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>🌱 Growth</h3>
+        <p class="muted">
+          Improving communication, confidence, teamwork, discipline,
+          and practical life skills through everyday experiences.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>🚀 Vision</h3>
+        <p class="muted">
+          Building a meaningful professional future through education,
+          hard work, creativity, and continuous improvement.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="wrap reveal">
+
+    <h2>My <span>strengths.</span></h2>
+
+    <div class="skills">
+      <span class="skill">Teamwork</span>
+      <span class="skill">Communication</span>
+      <span class="skill">Problem Solving</span>
+      <span class="skill">Time Management</span>
+      <span class="skill">Adaptability</span>
+      <span class="skill">Continuous Learning</span>
+    </div>
+
+  </div>
+</section>
+
+<section id="contact">
+  <div class="wrap card contact reveal">
+
+    <h2>Let's connect<span>.</span></h2>
+
+    <p class="muted">
+      Thank you for visiting my portfolio. I look forward to learning,
+      growing, and connecting with new people.
+    </p>
+
+    <a class="btn primary" href="mailto:your-email@example.com">
+      Send Me an Email ✉
+    </a>
+
+  </div>
+</section>
+
+<footer>
+  © 2026 Wijdaan Noor · Designed with purpose.
+</footer>
+
+<script>
+const observer = new IntersectionObserver(
+  entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("show");
+      }
+    });
+  },
+  { threshold: 0.12 }
+);
+
+document.querySelectorAll(".reveal").forEach(element => {
+  observer.observe(element);
+});
+</script>
+
+</body>
+</html>
