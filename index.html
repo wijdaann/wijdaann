@@ -1,66 +1,132 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mirza Wijdan Noor - Portfolio</title>
+
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0;
-            padding: 0;
             background: #f8fafc;
             color: #1e293b;
-            overflow-y: scroll;
+            line-height: 1.6;
         }
+
         header {
-            background: #6d28d9;
+            background: linear-gradient(135deg, #6d28d9, #9333ea);
             color: white;
             padding: 60px 20px;
             text-align: center;
         }
-        header h1 { margin: 0; font-size: 2.5rem; }
-        header p { margin: 10px 0 0; font-size: 1.2rem; opacity: 0.9; }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+
+        header p {
+            font-size: 1.2rem;
+        }
+
         section {
             max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
+            margin: 35px auto;
+            padding: 25px;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-        h2 { color: #6d28d9; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
-      .skills-list { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; list-style: none; }
-        .skills-list li { background: #f1f5f9; padding: 8px 16px; border-radius: 20px; font-weight: 500; }
+
+        h2 {
+            color: #6d28d9;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 0;
+            list-style: none;
+        }
+
+        .skills-list li {
+            background: #f1f5f9;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
         .btn {
             display: inline-block;
             background: #6d28d9;
             color: white;
-            padding: 12px 28px;
+            padding: 12px 24px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: bold;
-            margin-top: 15px;
+            margin-top: 12px;
             transition: background 0.2s;
         }
-        .btn:hover { background: #5b21b6; }
-        .center { text-align: center; }
+
+        .btn:hover {
+            background: #5b21b6;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        footer {
+            background: #1e293b;
+            color: white;
+            text-align: center;
+            padding: 25px;
+            margin-top: 50px;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            section {
+                margin: 20px 12px;
+                padding: 20px;
+            }
+        }
     </style>
 </head>
+
 <body>
+
     <header>
         <h1>Hi, I'm Mirza Wijdan Noor 👋</h1>
         <p>Student | Pakistan 🇵🇰</p>
     </header>
-  <section>
+
+    <section>
         <h2>About Me</h2>
-        <p>I am 20 years old from Pakistan. I love to travel, play and watch cricket. Welcome to my personal portfolio website where I showcase my projects and creations!</p>
+        <p>
+            I am 20 years old from Pakistan. I love to travel,
+            play cricket, and watch cricket matches. Welcome to my
+            personal portfolio website where I showcase my skills,
+            projects, and creations!
+        </p>
     </section>
 
     <section>
-        <h2>Skills</h2>
+        <h2>My Skills 💻</h2>
         <ul class="skills-list">
-            <li>R language</li>
+            <li>R Language</li>
             <li>C++</li>
             <li>HTML5</li>
             <li>CSS3</li>
@@ -69,21 +135,47 @@
 
     <section class="center">
         <h2>🎮 My Game Project</h2>
-        <p>Check out my latest web game! Can you find your way out of the haunted house?</p>
-        <a href="HauntedEscape.html" target="_blank" class="btn">Play Haunted House Escape</a>
+        <p>
+            Can you find your way out of the haunted house?
+            Play my web game!
+        </p>
+        <a href="./HauntedEscape.html"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="btn">
+            Play Haunted House Escape
+        </a>
     </section>
 
     <section class="center">
         <h2>📄 My Documents</h2>
-        <p>View my project documentation and certificates directly on Google Drive.</p>
-        <a href="https://google.com" target="_blank" class="btn">View Documents</a>
+        <p>
+            View my project documentation and documents on Google Docs.
+        </p>
+        <a href="https://docs.google.com/document/d/16Zn4-bWAXsh5IhyTx3vdXwCtAZmiVuULNTfWFS0nQrU/edit?usp=drivesdk"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="btn">
+            View My Documents
+        </a>
     </section>
 
     <section id="contact" class="center">
-        <h2>Contact Me</h2>
-        <p>Thank you for visiting my portfolio. I look forward to learning, growing, and connecting with new people. Feel free to reach out to me!</p>
-        <a class="btn" href="mailto:wijdannoor97@gmail.com">Contact Me</a>
+        <h2>📩 Contact Me</h2>
+        <p>
+            Thank you for visiting my portfolio!
+            I look forward to learning, growing, and connecting
+            with new people. Feel free to contact me.
+        </p>
+        <a class="btn" href="mailto:wijdannoor97@gmail.com">
+            Contact Me
+        </a>
     </section>
+
+    <footer>
+        <p>© 2026 Mirza Wijdan Noor</p>
+        <p>Made with ❤️ using HTML & CSS</p>
+    </footer>
+
 </body>
 </html>
-      
