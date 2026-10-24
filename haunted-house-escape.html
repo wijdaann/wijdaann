@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Haunted House Escape</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#100e18;color:#f4efff;font-family:system-ui,Arial,sans-serif}
+.wrap{max-width:1050px;margin:auto;padding:12px}h1{text-align:center;margin:2px 0 4px;color:#e9d5ff;font-size:clamp(24px,4vw,34px)}
+.sub{text-align:center;color:#c4b5fd;margin:0 0 10px;font-size:13px}
+.hud{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:8px}
+.stat{background:#211b2d;border:1px solid #55436c;border-radius:9px;padding:7px 9px;min-width:0}.stat b{display:block;color:#c4b5fd;font-size:11px}.stat span{font-size:16px;font-weight:800}
+.bar{height:6px;background:#09080d;border-radius:5px;margin-top:5px;overflow:hidden}.fill{height:100%;background:#a7f3d0;width:100%}
+#game{width:100%;height:auto;display:block;border:2px solid #655477;border-radius:10px;background:#211b27;touch-action:none}
+#msg{text-align:center;min-height:24px;color:#fde68a;font-size:14px;font-weight:700;margin:7px 0}
+.buttons{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+button{background:#382a4c;color:#fff;border:1px solid #8b75a5;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}button:hover{background:#514069}
+.help{background:#211b2d;border:1px solid #55436c;border-radius:9px;padding:10px;font-size:13px;line-height:1.5;color:#e4d9f5}
+.touch{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,42px);gap:5px;justify-content:center;margin:8px auto}.touch button{padding:0;touch-action:none}.empty{visibility:hidden}
+.overlay{position:fixed;inset:0;background:#08060dd9;display:none;align-items:center;justify-content:center;padding:16px;z-index:5}
+.panel{width:min(420px,100%);background:#211b2d;border:1px solid #a78bfa;border-radius:14px;padding:20px;text-align:center;box-shadow:0 15px 60px #0009}
+.panel h2{margin:0 0 8px;color:#e9d5ff}.panel p{line-height:1.45;color:#e9e1f5}.panel input{width:150px;text-align:center;font-size:26px;letter-spacing:7px;padding:8px;background:#100e18;color:white;border:1px solid #a78bfa;border-radius:8px}
+.journal{font-size:13px;text-align:left;background:#100e18;padding:10px;border-radius:8px;margin:10px 0}
+@media(max-width:600px){.wrap{padding:7px}.hud{grid-template-columns:repeat(3,minmax(0,1fr))}.stat span{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>👻 Haunted House Escape</h1><p class="sub">Find 3 keys • Discover 2 clues • Solve code 2741 • Escape in 3 minutes</p>
+<div class="hud">
+<div class="stat"><b>⏱ TIME LEFT</b><span id="timer">03:00</span></div>
+<div class="stat"><b>❤️ HEALTH</b><span id="hpText">100</span><div class="bar"><div id="hpBar" class="fill"></div></div></div>
+<div class="stat"><b>🗝 KEYS</b><span id="keyText">0 / 3</span></div>
+<div class="stat"><b>📜 CLUES</b><span id="clueText">0 / 2</span></div>
+<div class="stat"><b>⭐ SCORE</b><span id="scoreText">0</span></div>
+</div>
+<canvas id="game" width="960" height="600"></canvas>
+<div id="msg">Press Start Game. Use W A S D to move.</div>
+<div class="buttons"><button id="start">▶ Start / Restart</button><button id="pause">Ⅱ Pause</button><button id="journalBtn">📜 Clue Journal</button><button id="mute">🔇 Mute</button></div>
+<div class="touch"><button class="empty"> </button><button data-k="w">▲</button><button class="empty"> </button><button data-k="a">◀</button><button data-k="s">▼</button><button data-k="d">▶</button></div>
+<div class="help"><b>Controls:</b> W/A/S/D move · E interact with exit panel · Space hide near a wardrobe · Esc pause/close panel. On phones, use arrow buttons. Keys and clues are collected by touching them. Ghosts take 20 health; hiding lasts up to 4 seconds. Wrong code costs 10 seconds. <b>Code:</b> read both clues to discover the code.</div>
+</div>
+<div class="overlay" id="codeOverlay"><div class="panel"><h2>🔐 Exit Code Panel</h2><p id="panelText">Collect all keys and clues before unlocking the exit.</p><input id="codeInput" inputmode="numeric" maxlength="4" placeholder="••••" aria-label="Four digit code"><div class="buttons"><button id="confirm">Confirm Code</button><button id="closePanel">Close</button></div></div></div>
+<div class="overlay" id="journalOverlay"><div class="panel"><h2>📜 Clue Journal</h2><div class="journal" id="journalText">No clues found yet.</div><button id="closeJournal">Close Journal</button></div></div>
+<div class="overlay" id="endOverlay"><div class="panel"><h2 id="endTitle">Game Over</h2><p id="endText"></p><button id="again">Play Again</button></div></div>
+<script>
+(()=>{
+const c=document.getElementById('game'),x=c.getContext('2d'),$=id=>document.getElementById(id),W=960,H=600;
+const held=new Set();let running=false,paused=false,ended=false,last=0,timer=180,health=100,score=0,keysGot=0,cluesGot=0,unlocked=false,hidden=0,protection=0,wrongFlash=0,alertTime=0,muted=true;
+let p,items,ghosts,furniture,hides,doors,rooms,clues;
+const code='2741';
+const roomData=[
+{x:20,y:20,w:210,h:160,n:'FOYER'},{x:250,y:20,w:210,h:160,n:'LIBRARY'},
+{x:480,y:20,w:210,h:160,n:'STUDY'},{x:710,y:20,w:230,h:160,n:'BEDROOM'},
+{x:20,y:220,w:210,h:160,n:'DINING ROOM'},{x:250,y:220,w:210,h:160,n:'HALLWAY'},
+{x:480,y:220,w:210,h:160,n:'KITCHEN'},{x:710,y:220,w:230,h:360,n:'EXIT ROOM'}
+];
+function reset(){
+running=false;paused=false;ended=false;timer=180;health=100;score=0;keysGot=0;cluesGot=0;unlocked=false;hidden=0;protection=0;wrongFlash=0;alertTime=0;
+p={x:70,y:90,r:10,speed:160,hit:0};
+items=[
+{type:'key',x:330,y:70,got:false,id:0},{type:'key',x:570,y:320,got:false,id:1},{type:'key',x:820,y:100,got:false,id:2},
+{type:'clue',x:130,y:300,got:false,id:0,text:'Clue 1: The first two digits are 27.'},
+{type:'clue',x:400,y:280,got:false,id:1,text:'Clue 2: The final two digits are 41.'}
+];
+clues=[];
+furniture=[
+{x:90,y:45,w:65,h:25,n:'table'},{x:280,y:45,w:75,h:25,n:'shelf'},{x:385,y:105,w:40,h:35,n:'desk'},
+{x:520,y:50,w:60,h:35,n:'desk'},{x:750,y:50,w:60,h:28,n:'bed'},{x:845,y:130,w:38,h:20,n:'cabinet'},
+{x:60,y:250,w:75,h:32,n:'table'},{x:300,y:245,w:48,h:25,n:'bench'},{x:375,y:320,w:42,h:25,n:'cabinet'},
+{x:525,y:260,w:70,h:28,n:'counter'},{x:615,y:330,w:35,h:28,n:'stove'},{x:760,y:270,w:70,h:28,n:'table'}
+];
+hides=[{x:190,y:105,w:24,h:38},{x:430,y:145,w:24,h:30},{x:740,y:145,w:24,h:30},{x:660,y:345,w:24,h:30}];
+doors=[{x:230,y:82,w:20,h:45,need:0,open:false},{x:460,y:82,w:20,h:45,need:1,open:false},{x:690,y:82,w:20,h:45,need:2,open:false},{x:230,y:280,w:20,h:45,need:0,open:false},{x:460,y:280,w:20,h:45,need:1,open:false},{x:690,y:280,w:20,h:45,need:2,open:false}];
+ghosts=[
+{x:365,y:140,r:12,route:[{x:365,y:140},{x:410,y:60}],target:1,speed:65,state:'patrol',lost:0},
+{x:550,y:345,r:12,route:[{x:550,y:345},{x:640,y:260}],target:1,speed:72,state:'patrol',lost:0},
+{x:810,y:410,r:12,route:[{x:810,y:410},{x:890,y:520}],target:1,speed:70,state:'patrol',lost:0}
+];
+}
+function rectHit(px,py,r,b){let nx=Math.max(b.x,Math.min(px,b.x+b.w)),ny=Math.max(b.y,Math.min(py,b.y+b.h));return (px-nx)**2+(py-ny)**2<r*r;}
+function solid(px,py){
+if(px<p.r+20||py<p.r+20||px>W-p.r-20||py>H-p.r-20)return true;
+for(const f of furniture)if(rectHit(px,py,p.r,f))return true;
+for(const d of doors)if(!d.open&&rectHit(px,py,p.r,d))return true;
+return false;
+}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function canSee(a,b){ // walls/furniture block line of sight
+const n=12;for(let i=1;i<n;i++){let q=i/n,xx=a.x+(b.x-a.x)*q,yy=a.y+(b.y-a.y)*q;
+for(const f of furniture)if(xx>f.x&&xx<f.x+f.w&&yy>f.y&&yy<f.y+f.h)return false;
+for(const d of doors)if(!d.open&&xx>d.x&&xx<d.x+d.w&&yy>d.y&&yy<d.y+d.h)return false;
+}return true;
+}
+function moveToward(a,b,spd,dt){let dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;let nx=a.x+dx/l*spd*dt,ny=a.y+dy/l*spd*dt;if(!solid(nx,a.y))a.x=nx;if(!solid(a.x,ny))a.y=ny;}
+function message(t){$('msg').textContent=t}
+function hud(){
+let s=Math.max(0,Math.ceil(timer));$('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+$('timer').style.color=s<=10?'#fb7185':s<=30?'#fbbf24':'#fff';$('hpText').textContent=health;$('hpBar').style.width=health+'%';$('hpBar').style.background=health<40?'#fb7185':'#86efac';
+$('keyText').textContent=keysGot+' / 3';$('clueText').textContent=cluesGot+' / 2';$('scoreText').textContent=score;
+}
+function finish(win,why){ended=true;running=false;paused=false;$('endTitle').textContent=win?'YOU ESCAPED! 🎉':'GAME OVER';$('endText').textContent=win?`${why}\nFinal score: ${score} points. Time remaining: ${Math.ceil(timer)} seconds.`:why;$('endOverlay').style.display='flex';}
+function update(dt){
+if(!running||paused||ended)return;
+timer=Math.max(0,timer-dt);protection=Math.max(0,protection-dt);wrongFlash=Math.max(0,wrongFlash-dt);alertTime=Math.max(0,alertTime-dt);
+if(hidden>0)hidden=Math.max(0,hidden-dt);
+if(!hidden){
+let dx=(held.has('d')?1:0)-(held.has('a')?1:0),dy=(held.has('s')?1:0)-(held.has('w')?1:0);let l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;
+let nx=p.x+dx*p.speed*dt,ny=p.y+dy*p.speed*dt;if(!solid(nx,p.y))p.x=nx;if(!solid(p.x,ny))p.y=ny;
+}
+for(const it of items)if(!it.got&&dist(p,it)<21){it.got=true;if(it.type==='key'){keysGot++;score+=100;message('Key found! '+keysGot+'/3.');}else{cluesGot++;score+=150;clues.push(it.text);message('Clue found! Open the journal to review it.');}}
+for(const d of doors){if(!d.open&&keysGot>d.need&&dist(p,{x:d.x+10,y:d.y+22})<48)d.open=true;}
+for(const g of ghosts){
+let target=null;
+if(!hidden&&dist(g,p)<150&&canSee(g,p)){g.state='chase';g.lost=0;target=p;}
+else if(g.state==='chase'){g.lost+=dt;if(g.lost>=2&&dist(g,p)>150){g.state='patrol';g.target=(g.target+1)%g.route.length;}}
+if(!target&&alertTime>0&&g.x>700)target={x:825,y:440};
+if(!target&&g.state==='patrol'){target=g.route[g.target];if(dist(g,target)<8)g.target=(g.target+1)%g.route.length;target=g.route[g.target];}
+if(target)moveToward(g,target,g.state==='chase'?88:g.speed,dt);
+if(!hidden&&dist(g,p)<g.r+p.r+2&&protection<=0){health=Math.max(0,health-20);protection=1.5;wrongFlash=.35;message('A ghost touched you! Health -20.');}
+}
+if(protection>0&&wrongFlash>0){} 
+if(health<=0){hud();finish(false,'Your health reached zero before you escaped.');return;}
+if(timer<=0){hud();finish(false,'The countdown reached zero before you escaped.');return;}
+if(p.x>900&&p.y>535&&unlocked){score+=500+Math.floor(timer)*10;hud();finish(true,'You escaped the haunted house!');return;}
+hud();
+}
+function draw(){
+x.clearRect(0,0,W,H);x.fillStyle='#17131e';x.fillRect(0,0,W,H);
+// room floors and names
+for(let i=0;i<roomData.length;i++){let r=roomData[i];x.fillStyle=i%2?'#302638':'#382b35';x.fillRect(r.x,r.y,r.w,r.h);x.strokeStyle='#9a8290';x.lineWidth=5;x.strokeRect(r.x,r.y,r.w,r.h);x.fillStyle='#bcaabd';x.font='bold 12px system-ui';x.fillText(r.n,r.x+10,r.y+17);}
+// connecting corridor strips behind objects
+x.fillStyle='#302638';x.fillRect(220,82,40,45);x.fillRect(450,82,40,45);x.fillRect(680,82,40,45);x.fillRect(220,280,40,45);x.fillRect(450,280,40,45);x.fillRect(680,280,40,45);x.fillRect(790,175,40,55);
+x.strokeStyle='#9a8290';x.lineWidth=3;for(const d of doors){if(d.open){x.fillStyle='#5b493a';x.fillRect(d.x,d.y,d.w,d.h)}else{x.fillStyle='#6d3d45';x.fillRect(d.x,d.y,d.w,d.h);x.fillStyle='#fbbf24';x.beginPath();x.arc(d.x+d.w/2,d.y+12,3,0,7);x.fill();}}
+for(const f of furniture){x.fillStyle='#5a3d36';x.fillRect(f.x,f.y,f.w,f.h);x.strokeStyle='#a57b68';x.lineWidth=2;x.strokeRect(f.x,f.y,f.w,f.h);x.fillStyle='#d0a991';x.fillRect(f.x+4,f.y+4,Math.max(4,f.w-8),3);}
+for(const h of hides){x.fillStyle='#4d3145';x.fillRect(h.x,h.y,h.w,h.h);x.strokeStyle='#d8b4fe';x.strokeRect(h.x,h.y,h.w,h.h);x.fillStyle='#e9d5ff';x.fillRect(h.x+4,h.y+4,3,h.h-8);}
+for(const it of items)if(!it.got){if(it.type==='key'){x.font='25px serif';x.fillText('🗝️',it.x-12,it.y+9);x.strokeStyle='#facc15';x.beginPath();x.arc(it.x,it.y,15,0,7);x.stroke();}else{x.font='23px serif';x.fillText('📜',it.x-11,it.y+8);}}
+for(const g of ghosts){x.fillStyle='rgba(216,180,254,.18)';x.beginPath();x.arc(g.x,g.y,24,0,7);x.fill();x.fillStyle='#e9e5ff';x.beginPath();x.arc(g.x,g.y-2,g.r,Math.PI,0);x.lineTo(g.x+g.r,g.y+10);for(let i=3;i>=0;i--)x.lineTo(g.x-g.r+i*g.r*.5,g.y+5+(i%2)*6);x.closePath();x.fill();x.fillStyle='#6d28d9';x.beginPath();x.arc(g.x-4,g.y-2,2,0,7);x.arc(g.x+4,g.y-2,2,0,7);x.fill();}
+x.fillStyle=unlocked?'#65a30d':'#783b45';x.fillRect(875,525,40,50);x.strokeStyle=unlocked?'#d9f99d':'#fda4af';x.lineWidth=4;x.strokeRect(875,525,40,50);x.fillStyle='#fff';x.font='bold 11px system-ui';x.fillText(unlocked?'OPEN':'EXIT',876,518);x.fillStyle='#d6d3d1';x.fillRect(838,490,48,30);x.strokeStyle='#fbbf24';x.lineWidth=2;x.strokeRect(838,490,48,30);x.fillStyle='#111827';x.font='bold 12px monospace';x.fillText('2741',846,509);x.fillStyle='#e9d5ff';x.font='11px system-ui';x.fillText('E: PANEL',834,484);
+if(hidden>0){x.fillStyle='#d8b4fe';x.fillRect(p.x-14,p.y-18,28,36);x.fillStyle='#1f1728';x.fillRect(p.x-7,p.y-9,14,18);x.fillStyle='#fff';x.font='bold 12px system-ui';x.fillText('HIDING',p.x-24,p.y-24);}
+else{x.fillStyle=protection>0?'#fb7185':'#7dd3fc';x.beginPath();x.arc(p.x,p.y,p.r+3,0,7);x.fill();x.fillStyle='#1d4ed8';x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill();x.fillStyle='#fff';x.beginPath();x.arc(p.x+3,p.y-3,2,0,7);x.fill();}
+if(wrongFlash>0){x.fillStyle='rgba(248,113,113,.15)';x.fillRect(0,0,W,H);}
+if(!running&&!ended){x.fillStyle='#08060dcc';x.fillRect(0,0,W,H);x.textAlign='center';x.fillStyle='#f5d0fe';x.font='bold 32px system-ui';x.fillText('HAUNTED HOUSE ESCAPE',W/2,H/2-16);x.fillStyle='#f3e8ff';x.font='16px system-ui';x.fillText('Collect 3 keys • Find 2 clues • Escape in 3 minutes',W/2,H/2+18);x.textAlign='left';}
+if(paused&&running){x.fillStyle='#08060dcc';x.fillRect(0,0,W,H);x.textAlign='center';x.fillStyle='#fff';x.font='bold 34px system-ui';x.fillText('PAUSED',W/2,H/2);x.textAlign='left';}
+}
+function openPanel(){if(!running||paused||ended)return;$('panelText').textContent=keysGot<3||cluesGot<2?`Still needed: ${Math.max(0,3-keysGot)} key(s), ${Math.max(0,2-cluesGot)} clue(s). Find all items first.`:unlocked?'The exit is unlocked! Move to the exit door.':'Enter the four-digit code from your clues.';$('codeInput').value='';$('codeOverlay').style.display='flex';$('codeInput').focus();}
+function tryCode(){if(keysGot<3||cluesGot<2){$('panelText').textContent=`Exit locked. You still need ${3-keysGot} key(s) and ${2-cluesGot} clue(s).`;return;}
+let val=$('codeInput').value;if(!/^\d{4}$/.test(val)){$('panelText').textContent='Enter exactly four digits.';return;}
+if(val===code){if(!unlocked){unlocked=true;score+=200;message('Correct code! Exit unlocked. Reach the green exit door!');}$('panelText').textContent='Correct! The exit is unlocked. Walk through the exit door.';$('codeInput').value='';}
+else{timer=Math.max(0,timer-10);alertTime=6;message('Wrong code! -10 seconds. Ghosts are investigating the exit!');$('panelText').textContent='Incorrect code. 10 seconds lost and ghosts alerted. Try again.';hud();if(timer<=0)finish(false,'The countdown reached zero after a wrong code attempt.');}}
+$('start').onclick=()=>{reset();running=true;$('endOverlay').style.display='none';$('codeOverlay').style.display='none';$('journalOverlay').style.display='none';message('Explore the rooms. Collect all keys and clues!');};
+$('pause').onclick=()=>{if(!running||ended)return;paused=!paused;message(paused?'Paused. Press Pause to resume.':'Keep moving!');};
+$('journalBtn').onclick=()=>{ $('journalText').innerHTML=clues.length?clues.map(s=>'• '+s).join('<br>'):'No clues found yet. Explore rooms and touch the scrolls.';$('journalOverlay').style.display='flex';};
+$('closeJournal').onclick=()=>$('journalOverlay').style.display='none';
+$('confirm').onclick=tryCode;$('closePanel').onclick=()=>$('codeOverlay').style.display='none';$('again').onclick=()=>$('start').click();
+$('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇 Mute':'🔊 Sound on';message(muted?'Sound muted.':'No external audio is used in this version.');};
+window.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(['w','a','s','d',' ','escape','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
+if(k==='escape'){if($('codeOverlay').style.display==='flex')$('codeOverlay').style.display='none';else if($('journalOverlay').style.display==='flex')$('journalOverlay').style.display='none';else if(running&&!ended){paused=!paused;}return;}
+if(k==='e'){if(dist(p,{x:860,y:505})<90)openPanel();return;}
+if(k===' '&&running&&!paused&&!ended){if(hidden>0){hidden=0;message('You left your hiding spot.');}else{let h=hides.find(h=>dist(p,{x:h.x+h.w/2,y:h.y+h.h/2})<38);if(h){p.x=h.x+h.w/2;p.y=h.y+h.h/2;hidden=4;message('Hidden! Countdown continues. Press Space to leave early.');}else message('Find a nearby purple wardrobe to hide.');}return;}
+if(['w','a','s','d'].includes(k))held.add(k);
+});
+window.addEventListener('keyup',e=>held.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>held.clear());
+document.querySelectorAll('[data-k]').forEach(b=>{let k=b.dataset.k;const down=e=>{e.preventDefault();held.add(k)},up=e=>{e.preventDefault();held.delete(k)};b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);});
+c.addEventListener('click',e=>{const r=c.getBoundingClientRect(),mx=(e.clientX-r.left)*W/r.width,my=(e.clientY-r.top)*H/r.height;if(mx>810&&my>465&&running)openPanel();});
+function loop(ts){if(!last)last=ts;let dt=Math.min((ts-last)/1000,.04);last=ts;update(dt);draw();requestAnimationFrame(loop);}
+reset();hud();requestAnimationFrame(loop);
+})();
+</script>
+</body></html>
