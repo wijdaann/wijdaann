@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crossroads Conductor</title>
+<style>
+:root{--ink:#17243a;--muted:#617089;--panel:#fff;--green:#24b36b;--red:#ef5350;--yellow:#ffc247}
+*{box-sizing:border-box}body{margin:0;background:#edf3f8;color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:16px 20px;background:#17243a;color:white;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(20px,3vw,28px);margin:0}header p{margin:3px 0 0;color:#cbd5e1;font-size:13px}
+.stats{display:flex;gap:9px;flex-wrap:wrap}.stat{background:#263750;border-radius:10px;padding:8px 12px;min-width:85px;text-align:center}.stat small{display:block;color:#cbd5e1;font-size:11px}.stat strong{font-size:19px}
+main{max-width:1200px;margin:16px auto;padding:0 14px;display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:14px}
+.game-panel,.side-panel{background:var(--panel);border-radius:16px;box-shadow:0 4px 18px #1d355710;padding:13px}
+canvas{width:100%;height:auto;display:block;border-radius:12px;background:#a8d59a;touch-action:manipulation}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button{border:0;border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer;background:#e7edf5;color:#17243a}
+button:hover{filter:brightness(.96)}button:disabled{opacity:.45;cursor:not-allowed}
+.primary{background:#2463eb;color:white}.emergency{background:#ffe0df;color:#a51d1a}.ped{background:#e6e0ff;color:#4b36a8}
+h2{font-size:16px;margin:3px 0 10px}.side-panel section+section{border-top:1px solid #e8edf3;margin-top:13px;padding-top:13px}
+.signal-list{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.signal{display:flex;align-items:center;gap:8px;padding:8px;background:#f2f5f8;border-radius:9px;font-size:13px}
+.lamp{width:12px;height:12px;border-radius:50%;background:#aeb8c5;box-shadow:inset 0 0 0 2px #00000012}
+.lamp.red{background:var(--red)}.lamp.yellow{background:var(--yellow)}.lamp.green{background:var(--green)}
+.road-btn{width:100%;margin-top:6px;text-align:left;background:#f0f4fa}
+.warning{padding:9px;border-radius:9px;background:#fff4d8;color:#855300;font-size:13px;margin-top:8px;min-height:38px}
+.danger{background:#ffe4e2;color:#9c211c}.good{background:#e3f8ed;color:#12663d}
+.help{font-size:12px;line-height:1.5;color:var(--muted)}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:9px}
+#overlay{position:fixed;inset:0;background:#101b2dcc;display:none;align-items:center;justify-content:center;padding:20px;z-index:5}
+.modal{background:white;border-radius:18px;padding:26px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 70px #0005}.modal h2{font-size:28px;margin:0 0 8px}.modal p{color:#53627a;line-height:1.5}
+@media(max-width:850px){main{grid-template-columns:1fr}.side-panel{display:grid;grid-template-columns:1fr 1fr;gap:12px}.side-panel section+section{border-top:0;margin-top:0;padding-top:0}}
+@media(max-width:540px){header{padding:12px}.stats{width:100%;display:grid;grid-template-columns:repeat(4,1fr)}.stat{min-width:0;padding:6px}.stat strong{font-size:16px}.side-panel{display:block}.side-panel section+section{border-top:1px solid #e8edf3;margin-top:13px;padding-top:13px}button{padding:10px}}
+</style>
+</head>
+<body>
+<header><div><h1>🚦 Crossroads Conductor</h1><p>Keep the city moving. Make every crossing count.</p></div>
+<div class="stats"><div class="stat"><small>TIME LEFT</small><strong id="time">5:00</strong></div><div class="stat"><small>SCORE</small><strong id="score">0</strong></div><div class="stat"><small>ACCIDENTS</small><strong id="accidents">0 / 3</strong></div><div class="stat"><small>SHIFT</small><strong id="status">Ready</strong></div></div></header>
+<main><div class="game-panel">
+<canvas id="game" width="800" height="620" aria-label="Top-down traffic intersection game"></canvas>
+<div class="controls">
+<button class="primary" id="start">▶ Start</button><button id="pause">Ⅱ Pause</button><button id="restart">↻ Restart</button>
+<button class="emergency" id="emergency">🚑 Emergency Priority (E)</button><button class="ped" id="pedestrians">🚶 Pedestrian Crossing (P)</button>
+</div><div class="legend"><span>🟢 Move</span><span>🟡 Prepare to stop</span><span>🔴 Stop</span><span>Click a road signal or press 1–4</span></div>
+</div>
+<aside class="side-panel">
+<section><h2>Traffic lights</h2><div class="signal-list" id="signalList"></div>
+<button class="road-btn" data-road="N">1 · North road</button><button class="road-btn" data-road="S">2 · South road</button><button class="road-btn" data-road="E">3 · East road</button><button class="road-btn" data-road="W">4 · West road</button>
+<p class="help">Only one road moves at a time. The light changes through yellow and an all-red safety pause before the next road gets green.</p></section>
+<section><h2>Live alerts</h2><div id="alert" class="warning">Press Start when you're ready for your shift.</div><p class="help" id="queueInfo">Queues: N 0 · S 0 · E 0 · W 0</p></section>
+<section><h2>How to play</h2><p class="help">Cars earn 10 points, buses 20, ambulances 50 and safe pedestrian crossings 15. A queue over five vehicles is a warning. If eight or more wait for ten seconds, an accident occurs. The third accident ends your shift.</p><p class="help"><b>Keyboard:</b> 1–4 request a road · E emergency · P pedestrians · Space pause/resume.</p></section>
+</aside></main>
+<div id="overlay"><div class="modal"><h2 id="endTitle">Shift complete!</h2><p id="endText"></p><button class="primary" id="playAgain">Play again</button></div></div>
+<script>
+(()=>{
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const roads=['N','S','E','W'],names={N:'North',S:'South',E:'East',W:'West'};
+let running=false,paused=false,ended=false,elapsed=0,score=0,accidents=0;
+let active='N',phase='green',phaseTime=0,pending=null,vehicles=[],pedestrians=[],spawnClock=0,ambulanceClock=0,pedRequest=false,pedActive=false,pedTime=0;
+let last=0,queueTimers={N:0,S:0,E:0,W:0},congestionPenalty={N:false,S:false,E:false,W:false};
+const duration=300,center={x:400,y:310},roadPos={N:{x:400,y:38},S:{x:400,y:582},E:{x:762,y:310},W:{x:38,y:310}};
+function reset(){running=false;paused=false;ended=false;elapsed=0;score=0;accidents=0;active='N';phase='green';phaseTime=0;pending=null;vehicles=[];pedestrians=[];spawnClock=0;ambulanceClock=8;pedRequest=false;pedActive=false;pedTime=0;queueTimers={N:0,S:0,E:0,W:0};congestionPenalty={N:false,S:false,E:false,W:false};$('overlay').style.display='none';$('status').textContent='Ready';updateStats();updateLights();draw();$('alert').className='warning';$('alert').textContent='Press Start when you are ready for your shift.'}
+function updateStats(){$('time').textContent=Math.max(0,Math.ceil(duration-elapsed)/1).toFixed(0).replace(/^(\d)$/, '0$1');let t=Math.max(0,Math.ceil(duration-elapsed));$('time').textContent=Math.floor(t/60)+':'+String(t%60).padStart(2,'0');$('score').textContent=score;$('accidents').textContent=accidents+' / 3'}
+function lightFor(r){if(pedActive||phase==='allred'||phase==='pedclear')return 'red';if(r!==active)return 'red';return phase}
+function updateLights(){let html='';roads.forEach(r=>{let s=lightFor(r);html+=`<div class="signal"><span class="lamp ${s}"></span><b>${names[r]}</b><small>${s.toUpperCase()}</small></div>`});$('signalList').innerHTML=html}
+function requestRoad(r){if(!running||paused||ended||pedActive||phase==='yellow'||phase==='allred'||phase==='pedclear')return;if(r===active)return;pending=r;phase='yellow';phaseTime=0;updateLights();setAlert('Changing signal: '+names[active]+' traffic is slowing down.','')}
+function requestEmergency(){if(!running||paused||ended)return;let amb=vehicles.find(v=>v.type==='ambulance'&&!v.done);if(!amb){setAlert('No ambulance is waiting right now.','');return}pending=amb.road;pedRequest=false;if(pedActive){setAlert('Let pedestrians finish crossing first.','');return}if(amb.road===active&&phase==='green'){setAlert('Emergency vehicle has priority on '+names[amb.road]+'.','good');return}if(phase==='green'){phase='yellow';phaseTime=0}setAlert('🚑 Emergency approaching from '+names[amb.road]+'! Give it priority.','danger')}
+function requestPedestrians(){if(!running||paused||ended)return;if(pedActive||pedRequest)return;pedRequest=true;if(phase==='green'){phase='yellow';phaseTime=0}setAlert('Pedestrian crossing requested. Stop all vehicles.','')}
+function setAlert(msg,kind){$('alert').textContent=msg;$('alert').className='warning '+(kind||'')}
+function spawn(){let road=roads[Math.floor(Math.random()*4)];let ambDue=ambulanceClock<=0;let type=ambDue?'ambulance':(Math.random()<.12?'bus':'car');if(ambDue){road=roads[Math.floor(Math.random()*4)];ambulanceClock=24+Math.random()*25}let count=vehicles.filter(v=>v.road===road&&!v.done).length;if(count>=10)return;vehicles.push({road,type,dist:0,speed:type==='ambulance'?82:type==='bus'?48:58,done:false,passed:false,wait:0,id:Math.random()})}
+function approachDistance(v){return v.dist}
+function update(dt){elapsed+=dt;phaseTime+=dt;spawnClock+=dt;ambulanceClock-=dt;
+let interval=Math.max(.85,2.4-elapsed/190);if(spawnClock>=interval){spawnClock=0;spawn();if(elapsed>80&&Math.random()<.3)spawn()}
+if(phase==='yellow'&&phaseTime>=1.3){phase='allred';phaseTime=0}
+if(phase==='allred'&&phaseTime>=.8){if(pedRequest){pedActive=true;pedRequest=false;phase='pedclear';phaseTime=0;pedTime=5.5;pedestrians=Array.from({length:4+Math.floor(Math.random()*4)},(_,i)=>({side:i%4,progress:0}))}else{active=pending||active;pending=null;phase='green';phaseTime=0}}
+if(phase==='pedclear'){pedTime-=dt;pedestrians.forEach(p=>p.progress+=dt/5.5);if(pedTime<=0){score+=15;pedActive=false;pedestrians=[];phase='allred';phaseTime=0;pending=null;setAlert('Pedestrians crossed safely. +15 points','good')}}
+let counts={N:0,S:0,E:0,W:0};
+vehicles.forEach(v=>{if(v.done)return;let signal=lightFor(v.road);let gap=0;let ahead=vehicles.filter(o=>o!==v&&o.road===v.road&&!o.done&&o.dist>v.dist).sort((a,b)=>a.dist-b.dist)[0];if(ahead)gap=ahead.dist-v.dist;let canMove=signal==='green'&&!pedActive&&phase==='green';let stopAt= v.dist<165;
+if(!canMove&&stopAt){v.wait+=dt;v.dist=Math.min(v.dist,Math.max(0,150-(v.wait*0)));}else if(ahead&&gap<42){v.dist+=Math.max(0,gap-28)*.08}else{v.dist+=v.speed*dt}
+if(v.dist>210){if(!v.passed){v.passed=true;score+=v.type==='ambulance'?50:v.type==='bus'?20:10}v.done=true}
+if(v.dist<155)counts[v.road]++;
+});
+vehicles=vehicles.filter(v=>!v.done||v.dist<240);
+roads.forEach(r=>{if(counts[r]>=8){queueTimers[r]+=dt;if(queueTimers[r]>=10&&!congestionPenalty[r]){congestionPenalty[r]=true;accidents++;score=Math.max(0,score-10);setAlert('🚧 Congestion accident on '+names[r]+' road!','danger')}}else{queueTimers[r]=Math.max(0,queueTimers[r]-dt*1.5);if(counts[r]<5)congestionPenalty[r]=false}if(counts[r]>5&&!ended)setAlert('⚠ Heavy congestion on '+names[r]+' road ('+counts[r]+' waiting).','danger')});
+if(accidents>=3){finish(false);return}if(elapsed>=duration){finish(true);return}
+$('queueInfo').textContent='Queues: '+roads.map(r=>r+' '+counts[r]).join(' · ');updateStats();updateLights();
+}
+function finish(win){running=false;ended=true;$('status').textContent=win?'Finished':'Game over';$('endTitle').textContent=win?'🏆 Shift complete!':'🚨 Game Over';$('endText').textContent=(win?'You completed the five-minute shift.':'The third accident ended your shift.')+' Final score: '+score+'. Accidents: '+accidents+'.';$('overlay').style.display='flex';updateLights()}
+function drawRoad(){ctx.fillStyle='#8bc77c';ctx.fillRect(0,0,800,620);ctx.fillStyle='#626d78';ctx.fillRect(300,0,200,620);ctx.fillRect(0,210,800,200);ctx.fillStyle='#e8e4d6';ctx.fillRect(286,0,5,620);ctx.fillRect(509,0,5,620);ctx.fillRect(0,196,800,5);ctx.fillRect(0,420,800,5);
+ctx.strokeStyle='#f7e6a5';ctx.lineWidth=3;ctx.setLineDash([18,16]);ctx.beginPath();ctx.moveTo(400,0);ctx.lineTo(400,190);ctx.moveTo(400,430);ctx.lineTo(400,620);ctx.moveTo(0,310);ctx.lineTo(285,310);ctx.moveTo(515,310);ctx.lineTo(800,310);ctx.stroke();ctx.setLineDash([]);
+ctx.fillStyle='#d6dce0';ctx.fillRect(280,190,240,10);ctx.fillRect(280,420,240,10);ctx.fillRect(280,190,10,240);ctx.fillRect(510,190,10,240);
+ctx.fillStyle='#fff';for(let i=0;i<7;i++){ctx.fillRect(303+i*27,174,17,13);ctx.fillRect(303+i*27,433,17,13);ctx.fillRect(263,214+i*27,13,17);ctx.fillRect(524,214+i*27,13,17)}
+// sidewalks and simple buildings
+ctx.fillStyle='#b9d7ad';ctx.fillRect(0,0,280,185);ctx.fillRect(520,0,280,185);ctx.fillRect(0,435,280,185);ctx.fillRect(520,435,280,185);
+[['🏢',55,55],['🏬',700,65],['🌳',85,500],['🏠',680,520]].forEach(a=>{ctx.font='42px sans-serif';ctx.fillText(a[0],a[1],a[2])});
+}
+function drawLights(){roads.forEach(r=>{let p=roadPos[r],s=lightFor(r);let x=p.x,y=p.y;if(r==='N')y=175;if(r==='S')y=445;if(r==='E')x=530;if(r==='W')x=270;ctx.fillStyle='#263238';ctx.beginPath();ctx.roundRect(x-11,y-24,22,54,7);ctx.fill();['red','yellow','green'].forEach((c,i)=>{ctx.beginPath();ctx.arc(x,y-15+i*16,5,0,Math.PI*2);ctx.fillStyle=(s===c)?({red:'#ff4545',yellow:'#ffd24b',green:'#32d878'}[c]):'#59636c';ctx.fill()});ctx.fillStyle='#17243a';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText(r,x,y+43)})}
+function vehicleXY(v){let d=Math.min(v.dist,250),x=400,y=310;if(v.road==='N'){x=365;y=35+d}else if(v.road==='S'){x=435;y=585-d}else if(v.road==='W'){x=35+d;y=275}else{x=765-d;y=345}return{x,y}}
+function drawVehicles(){vehicles.forEach(v=>{if(v.done)return;let p=vehicleXY(v);ctx.save();ctx.translate(p.x,p.y);if(v.road==='N'||v.road==='S')ctx.rotate(Math.PI/2);let color=v.type==='ambulance'?'#f7f7f7':v.type==='bus'?'#f0b33d':'#3188d8';ctx.fillStyle='#17243a';ctx.beginPath();ctx.roundRect(-20,-10,40,20,5);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(-18,-9,36,18,5);ctx.fill();ctx.fillStyle='#bde6f5';ctx.fillRect(-9,-7,13,6);if(v.type==='ambulance'){ctx.fillStyle='#e53935';ctx.fillRect(-3,-8,5,16);ctx.fillRect(-8,-3,15,5)}if(v.type==='bus'){ctx.fillStyle='#fff';ctx.fillRect(6,-7,7,14)}ctx.restore()})}
+function drawPedestrians(){if(!pedActive&&!pedRequest)return;ctx.fillStyle='#fff';for(let i=0;i<5;i++){ctx.fillRect(320+i*30,190,15,9);ctx.fillRect(320+i*30,421,15,9)}if(pedActive){ctx.font='22px sans-serif';ctx.fillText('🚶',365,305);ctx.fillText('🚶',430,335)}}
+function draw(){drawRoad();drawLights();drawVehicles();drawPedestrians();ctx.fillStyle='#fff';ctx.font='bold 14px system-ui';ctx.textAlign='left';ctx.fillText('NORTH',330,18);ctx.fillText('SOUTH',330,610);ctx.fillText('WEST',8,235);ctx.fillText('EAST',740,235);if(!running&&!ended){ctx.fillStyle='#17243a';ctx.font='bold 20px system-ui';ctx.textAlign='center';ctx.fillText('Press START to begin your shift',400,300)}}
+function loop(ts){let dt=Math.min((ts-last)/1000||0,.05);last=ts;if(running&&!paused&&!ended)update(dt);draw();requestAnimationFrame(loop)}
+function start(){if(ended)reset();if(!running){running=true;paused=false;$('status').textContent='Live';setAlert('Shift started. Keep the intersection moving!','good')}}
+function togglePause(){if(!running||ended)return;paused=!paused;$('status').textContent=paused?'Paused':'Live';$('pause').textContent=paused?'▶ Resume':'Ⅱ Pause';setAlert(paused?'Game paused.':'Back to work!','')}
+$('start').onclick=start;$('pause').onclick=togglePause;$('restart').onclick=reset;$('playAgain').onclick=()=>{reset();start()};$('emergency').onclick=requestEmergency;$('pedestrians').onclick=requestPedestrians;
+document.querySelectorAll('[data-road]').forEach(b=>b.onclick=()=>requestRoad(b.dataset.road));
+canvas.addEventListener('click',e=>{let rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)*800/rect.width,y=(e.clientY-rect.top)*620/rect.height;let r=null;if(y<185&&x>285&&x<515)r='N';else if(y>435&&x>285&&x<515)r='S';else if(x<280&&y>190&&y<430)r='W';else if(x>520&&y>190&&y<430)r='E';if(r)requestRoad(r)});
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(['1','2','3','4'].includes(e.key))requestRoad(roads[Number(e.key)-1]);if(e.key.toLowerCase()==='e')requestEmergency();if(e.key.toLowerCase()==='p')requestPedestrians();if(e.code==='Space'){e.preventDefault();togglePause()}});
+reset();requestAnimationFrame(loop);
+})();
+</script>
+</body></html>
